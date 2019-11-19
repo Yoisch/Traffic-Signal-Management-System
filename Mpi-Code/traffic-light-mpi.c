@@ -6,9 +6,13 @@
 #define SIZE 100
 #define ARRAY_SIZE 1000
 
+FILE *file;
+
 MPI_Status status;
 
 int numberOfProcesses, rank, dest, source, laneNumber, chunkSize, offset;
+
+int results[1000];
 
 int instance,L1Car,L1Time,L2Car,L2Time,L3Car,L3Time,L4Car,L4Time;
 int* L1Cars; 
@@ -136,8 +140,13 @@ int calcLane(int* L1Cars, int* L1Times, int* L2Cars,int* L2Times, int* L3Cars, i
                     laneGo = 4;
                 }
             }
+
+            file = fopen("Results.csv", "a");
+            fprintf(file,"%d \t %d \n",i,laneGo);
+            fclose(file);
             printf("In Instance %d\tlane %d gets to go\t(calc by process %d)\n", i, laneGo, process);
     }
+
 }
 
 void initialization(int argc, char **argv) {
@@ -159,6 +168,12 @@ void masterTask() {
         
         for (dest=1; dest < numberOfProcesses; dest++) {
             
+            int startNumber;
+            startNumber = rank * offset;
+            int endNumber;
+            endNumber = startNumber + offset;
+            calcLane(L1Cars, L1Times, L2Cars, L2Times, L3Cars, L3Times,L4Cars, L4Times, startNumber, endNumber, rank);  
+
             /**Sending the arrays to the child processes**/
             // lane 1
             MPI_Send(L1Cars, numberOfitems, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);
@@ -174,14 +189,10 @@ void masterTask() {
             MPI_Send(L4Times, numberOfitems, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);
             // variables that will be returned
             offset = chunkSize;
-            // MPI_Send(&laneNumber, numberOfitems, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);
+            // MPI_Send(results, 1000, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);
             MPI_Send(&offset, numberOfitems, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);
 
-            int startNumber;
-            startNumber = rank * offset;
-            int endNumber;
-            endNumber = startNumber + offset;
-            calcLane(L1Cars, L1Times, L2Cars, L2Times, L3Cars, L3Times,L4Cars, L4Times, startNumber, endNumber, rank);
+            
         }
     }
 }
@@ -198,7 +209,7 @@ void nonMasterTasks() {
         MPI_Recv(L3Times, numberOfitems, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
         MPI_Recv(L4Cars, numberOfitems, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
         MPI_Recv(L4Times, numberOfitems, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-        // MPI_Recv(&laneNumber, numberOfitems, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+        // MPI_Recv(results, 1000, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
         MPI_Recv(&offset, numberOfitems, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
         int startNumber;
@@ -210,6 +221,11 @@ void nonMasterTasks() {
 }
 
 int main(int argc, char *argv[]) {
+
+    char filename[] = "Results.csv";
+    file = fopen(filename,"w");
+    fprintf(file,"Instance \t Lane Result \n");
+    fclose(file);
 
     fill_array();
 
@@ -224,6 +240,6 @@ int main(int argc, char *argv[]) {
     
     /**Finalize the MPI environment**/
     MPI_Finalize();
-    
+
     return 0;
 }
