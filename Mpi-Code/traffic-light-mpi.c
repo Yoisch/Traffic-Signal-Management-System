@@ -102,12 +102,11 @@ void fill_array() {
         // printf("Test at 1000: %d\n",L2Cars[1000]);
 }
 
-int calcLane(int* L1Cars, int* L1Times, int* L2Cars,int* L2Times, int* L3Cars, int* L3Times, int* L4Cars, int* L4Times, int startNumber, int offset, int process) {
+int calcLane(int* L1Cars, int* L1Times, int* L2Cars,int* L2Times, int* L3Cars, int* L3Times, int* L4Cars, int* L4Times, int startNumber, int endNumber, int process) {
     int maxNumCars = 0;
     int laneGo;
     int i;
-
-    for(i = startNumber; i < offset; i++) {
+    for(i = startNumber; i < endNumber; i++) {
         if (L1Times[i] >= 60 || L2Times[i] >= 60 || L3Times[i] >= 60 || L3Times[i] >= 60) {
                 if(L1Times[i] >= 60) {
                     laneGo = 1;
@@ -162,70 +161,52 @@ void masterTask() {
             
             /**Sending the arrays to the child processes**/
             // lane 1
-            MPI_Send(&L1Cars, numberOfitems, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);
-            MPI_Send(&L1Times, numberOfitems, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);
+            MPI_Send(L1Cars, numberOfitems, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);
+            MPI_Send(L1Times, numberOfitems, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);
             // lane2
-            MPI_Send(&L2Cars, numberOfitems, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);
-            MPI_Send(&L2Times, numberOfitems, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);
+            MPI_Send(L2Cars, numberOfitems, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);
+            MPI_Send(L2Times, numberOfitems, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);
             // lane3   
-            MPI_Send(&L3Cars, numberOfitems, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);
-            MPI_Send(&L3Times, numberOfitems, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);            
+            MPI_Send(L3Cars, numberOfitems, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);
+            MPI_Send(L3Times, numberOfitems, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);            
             // lane4
-            MPI_Send(&L4Cars, numberOfitems, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);
-            MPI_Send(&L4Times, numberOfitems, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);
+            MPI_Send(L4Cars, numberOfitems, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);
+            MPI_Send(L4Times, numberOfitems, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);
             // variables that will be returned
             offset = chunkSize;
-            MPI_Send(&laneNumber, numberOfitems, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);
+            // MPI_Send(&laneNumber, numberOfitems, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);
             MPI_Send(&offset, numberOfitems, MPI_INT, dest, MPI_ANY_TAG, MPI_COMM_WORLD);
 
             int startNumber;
             startNumber = rank * offset;
-            
-            calcLane(L1Cars, L1Times, L2Cars, L2Times, L3Cars, L3Times,L4Cars, L4Times, startNumber, offset, rank);
-
+            int endNumber;
+            endNumber = startNumber + offset;
+            calcLane(L1Cars, L1Times, L2Cars, L2Times, L3Cars, L3Times,L4Cars, L4Times, startNumber, endNumber, rank);
         }
     }
 }
 
 void nonMasterTasks() {
-    
     if(rank > MASTER) {
-        printf("process %d\n", rank);
+        int numberOfitems = 1;
+
+        MPI_Recv(L1Cars, numberOfitems, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+        MPI_Recv(L1Times, numberOfitems, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+        MPI_Recv(L2Cars, numberOfitems, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+        MPI_Recv(L2Times, numberOfitems, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+        MPI_Recv(L3Cars, numberOfitems, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+        MPI_Recv(L3Times, numberOfitems, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+        MPI_Recv(L4Cars, numberOfitems, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+        MPI_Recv(L4Times, numberOfitems, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+        // MPI_Recv(&laneNumber, numberOfitems, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+        MPI_Recv(&offset, numberOfitems, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+        int startNumber;
+        startNumber = rank * offset;
+        int endNumber;
+        endNumber = startNumber + offset;
+        calcLane(L1Cars, L1Times, L2Cars, L2Times, L3Cars, L3Times,L4Cars, L4Times, startNumber, endNumber, rank);
     }
-
-    //! NEED TO FINISH
-    // if(numberOfProcesses == 2) {
-    //     if(rank == 1) {
-    //         int numberOfitems = 1;
-            
-    //             // lane 1
-    //         MPI_Recv(&laneOne, numberOfitems, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    //         // lane 2
-    //         MPI_Recv(&laneTwo, numberOfitems, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    //         // lane 3
-    //         MPI_Recv(&laneThree, numberOfitems, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    //         // lane 4
-    //         MPI_Recv(&laneFour, numberOfitems, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    //         // max number of cars to send back
-    //         MPI_Recv(&maxCars, numberOfitems, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    //         // lane number with max number of cars
-    //         MPI_Recv(&laneNumber, numberOfitems, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    //         MPI_Recv(&chunkSize, numberOfitems, MPI_INT, MASTER, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-            
-    //         int startPosition = 0;
-    //         int endPosition = 14;
-            
-    //         int i;
-    //         for (i=startPosition; i<endPosition; i++) {
-    //             laneNumber = calcLane(laneOne, laneTwo, laneThree, laneFour, i, rank);
-    //     //      MPI_Send(&laneNumber, numberOfitems, MPI_INT, MASTER, 10, MPI_COMM_WORLD);
-
-    //         }
-    //             // send back max number of cars in a lane
-    //     //         MPI_Send(&maxCars, numberOfitems, MPI_INT, MASTER, 10, MPI_COMM_WORLD);
-    //     }
-    // }
-
 }
 
 int main(int argc, char *argv[]) {
