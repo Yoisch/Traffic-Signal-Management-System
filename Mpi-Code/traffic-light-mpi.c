@@ -142,7 +142,7 @@ int calcLane(int* L1Cars, int* L1Times, int* L2Cars,int* L2Times, int* L3Cars, i
             }
 
             file = fopen("Results.csv", "a");
-            fprintf(file,"%d \t %d \n",i,laneGo);
+            fprintf(file,"%d, %d \n",i,laneGo);
             fclose(file);
             printf("In Instance %d\tlane %d gets to go\t(calc by process %d)\n", i, laneGo, process);
     }
