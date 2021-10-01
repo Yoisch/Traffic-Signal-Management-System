@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define SIZE 100
+int SIZE = 100;
 
 int main()
 {
